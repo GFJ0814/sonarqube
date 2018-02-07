@@ -17,26 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+package org.sonar.db.webhook;
 
-package org.sonar.server.platform.db.migration.version.v71;
+import java.util.List;
+import javax.annotation.CheckForNull;
+import org.apache.ibatis.annotations.Param;
 
-import org.junit.Test;
+public interface WebhookMapper {
 
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMigrationCount;
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMinimumMigrationNumber;
+  @CheckForNull
+  WebhookDto selectByUuid(@Param("webhookUuid") String webhookUuid);
 
-public class DbVersion71Test {
+  List<WebhookDto> selectForProjectUuidOrderedByName(@Param("projectUuid") String projectUuid);
 
-  private DbVersion71 underTest = new DbVersion71();
+  List<WebhookDto> selectForOrganizationUuidOrderedByName(@Param("organizationUuid") String organizationUuid);
 
-  @Test
-  public void migrationNumber_starts_at_2000() {
-    verifyMinimumMigrationNumber(underTest, 2000);
-  }
-
-  @Test
-  public void verify_migration_count() {
-    verifyMigrationCount(underTest, 7);
-  }
+  void insert(WebhookDto dto);
 
 }

@@ -17,26 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+package org.sonar.server.webhook.ws;
 
-package org.sonar.server.platform.db.migration.version.v71;
+import static java.lang.String.format;
+import static java.util.Locale.ENGLISH;
 
-import org.junit.Test;
+class WebhookSupport {
 
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMigrationCount;
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMinimumMigrationNumber;
-
-public class DbVersion71Test {
-
-  private DbVersion71 underTest = new DbVersion71();
-
-  @Test
-  public void migrationNumber_starts_at_2000() {
-    verifyMinimumMigrationNumber(underTest, 2000);
+  private WebhookSupport() {
+    // only statics
   }
 
-  @Test
-  public void verify_migration_count() {
-    verifyMigrationCount(underTest, 7);
+  static void checkUrlPattern(String url, String message, Object... messageArguments) {
+    if (!url.toLowerCase(ENGLISH).startsWith("http://") && !url.toLowerCase(ENGLISH).startsWith("https://")) {
+      throw new IllegalArgumentException(format(message, messageArguments));
+    }
+    String sub = url.substring("http://".length());
+    if (sub.contains(":") && !sub.substring(sub.indexOf(':')).contains("@")) {
+      throw new IllegalArgumentException(format(message, messageArguments));
+    }
   }
 
 }
