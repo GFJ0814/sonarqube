@@ -30,17 +30,17 @@ public class SystemInfoPage {
   }
 
   public SystemInfoPage shouldHaveCard(String title) {
-    Selenide.$$(".system-info-health-card-title").find(Condition.text(title)).should(Condition.exist);
+    Selenide.$$(".boxed-group-accordion-title").find(Condition.text(title)).should(Condition.exist);
     return this;
   }
 
   public SystemInfoPage shouldHaveCards(String... titles) {
-    Selenide.$$(".system-info-health-card-title").shouldHave(CollectionCondition.texts(titles));
+    Selenide.$$(".boxed-group-accordion-title").shouldHave(CollectionCondition.texts(titles));
     return this;
   }
 
   public SystemInfoPageItem getCardItem(String card) {
-    SelenideElement cardTitle = Selenide.$$(".system-info-health-card-title").find(Condition.text(card)).should(Condition.exist);
+    SelenideElement cardTitle = Selenide.$$(".boxed-group-accordion-title").find(Condition.text(card)).should(Condition.exist);
     return new SystemInfoPageItem(cardTitle.parent().parent());
   }
 }
