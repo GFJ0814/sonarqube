@@ -30,13 +30,13 @@ import org.sonar.db.DbSession;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.webhook.WebhookDto;
-import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.organization.DefaultOrganizationProvider;
 import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.Webhooks;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.sonar.server.webhook.ws.WebhooksWsParameters.ACTION_CREATE;
 import static org.sonar.server.webhook.ws.WebhooksWsParameters.NAME_PARAM;
@@ -136,9 +136,9 @@ public class CreateAction implements WebhooksWsAction {
 
       ComponentDto projectDto = null;
       if (isNotBlank(projectKey)) {
-        Optional<ComponentDto> dtoOptional = Optional.ofNullable(dbClient.componentDao().selectByKey(dbSession, projectKey).orNull());
+        Optional<ComponentDto> dtoOptional = ofNullable(dbClient.componentDao().selectByKey(dbSession, projectKey).orNull());
         ComponentDto componentDto = checkFoundWithOptional(dtoOptional, "No project with key '%s'", projectKey);
-        checkThatProjectBelongsToOrganization(componentDto, organizationDto, "Project '%s' does not belong to organisation '%s'", projectKey, organizationKey);
+        webhookSupport.checkThatProjectBelongsToOrganization(componentDto, organizationDto, "Project '%s' does not belong to organisation '%s'", projectKey, organizationKey);
         webhookSupport.checkUserPermissionOn(componentDto);
         projectDto = componentDto;
       } else {
@@ -201,12 +201,6 @@ public class CreateAction implements WebhooksWsAction {
 
   private int numberOfWebhookOf(DbSession dbSession, ComponentDto project) {
     return dbClient.webhookDao().selectByProjectUuid(dbSession, project.uuid()).size();
-  }
-
-  private static void checkThatProjectBelongsToOrganization(ComponentDto componentDto, OrganizationDto organizationDto, String message, Object... messageArguments) {
-    if (!organizationDto.getUuid().equals(componentDto.getOrganizationUuid())) {
-      throw new NotFoundException(format(message, messageArguments));
-    }
   }
 
   private OrganizationDto defaultOrganizationDto(DbSession dbSession) {

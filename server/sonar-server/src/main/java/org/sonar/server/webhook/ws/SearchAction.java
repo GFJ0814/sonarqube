@@ -19,12 +19,9 @@
  */
 package org.sonar.server.webhook.ws;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
@@ -32,19 +29,21 @@ import org.sonar.api.server.ws.WebService;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.ComponentDto;
-import org.sonar.server.setting.ws.Setting;
-import org.sonar.server.setting.ws.SettingsFinder;
+import org.sonar.db.organization.OrganizationDto;
+import org.sonar.db.webhook.WebhookDto;
+import org.sonar.server.organization.DefaultOrganizationProvider;
 import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.Webhooks.SearchWsResponse.Builder;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
-import static org.sonar.api.web.UserRole.ADMIN;
 import static org.sonar.server.webhook.ws.WebhooksWsParameters.ORGANIZATION_KEY_PARAM;
 import static org.sonar.server.webhook.ws.WebhooksWsParameters.PROJECT_KEY_PARAM;
 import static org.sonar.server.webhook.ws.WebhooksWsParameters.SEARCH_ACTION;
 import static org.sonar.server.ws.KeyExamples.KEY_ORG_EXAMPLE_001;
 import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
 import static org.sonar.server.ws.WsUtils.checkFoundWithOptional;
+import static org.sonar.server.ws.WsUtils.checkStateWithOptional;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.Webhooks.SearchWsResponse.newBuilder;
 
@@ -52,12 +51,14 @@ public class SearchAction implements WebhooksWsAction {
 
   private final DbClient dbClient;
   private final UserSession userSession;
-  private final SettingsFinder settingsFinder;
+  private final DefaultOrganizationProvider defaultOrganizationProvider;
+  private final WebhookSupport webhookSupport;
 
-  public SearchAction(DbClient dbClient, UserSession userSession, SettingsFinder settingsFinder) {
+  public SearchAction(DbClient dbClient, UserSession userSession, DefaultOrganizationProvider defaultOrganizationProvider, WebhookSupport webhookSupport) {
     this.dbClient = dbClient;
     this.userSession = userSession;
-    this.settingsFinder = settingsFinder;
+    this.defaultOrganizationProvider = defaultOrganizationProvider;
+    this.webhookSupport = webhookSupport;
   }
 
   @Override
@@ -86,44 +87,63 @@ public class SearchAction implements WebhooksWsAction {
   public void handle(Request request, Response response) throws Exception {
 
     String projectKey = request.param(PROJECT_KEY_PARAM);
+    String organizationKey = request.param(ORGANIZATION_KEY_PARAM);
 
     userSession.checkLoggedIn();
 
-    writeResponse(request, response, doHandle(projectKey));
+    writeResponse(request, response, doHandle(organizationKey, projectKey));
 
   }
 
-  private List<Setting> doHandle(@Nullable String projectKey) {
+  private List<WebhookDto> doHandle(@Nullable String organizationKey, @Nullable String projectKey) {
 
     try (DbSession dbSession = dbClient.openSession(true)) {
 
-      if (isNotBlank(projectKey)) {
-        Optional<ComponentDto> component = dbClient.componentDao().selectByKey(dbSession, projectKey);
-        checkFoundWithOptional(component, "project %s does not exist", projectKey);
-        userSession.checkComponentPermission(ADMIN, component.get());
-        return new ArrayList<>(settingsFinder.loadComponentSettings(dbSession,
-          ImmutableSet.of("sonar.webhooks.project"), component.get()).get(component.get().uuid()));
+      OrganizationDto organizationDto;
+      if (isNotBlank(organizationKey)) {
+        Optional<OrganizationDto> dtoOptional = dbClient.organizationDao().selectByKey(dbSession, organizationKey);
+        organizationDto = checkFoundWithOptional(dtoOptional, "No organization with key '%s'", organizationKey);
       } else {
-        userSession.checkIsSystemAdministrator();
-        return settingsFinder.loadGlobalSettings(dbSession, ImmutableSet.of("sonar.webhooks.global"));
+        organizationDto = defaultOrganizationDto(dbSession);
       }
+
+      if (isNotBlank(projectKey)) {
+
+        Optional<ComponentDto> optional = ofNullable(dbClient.componentDao().selectByKey(dbSession, projectKey).orNull());
+        ComponentDto componentDto = checkFoundWithOptional(optional, "project %s does not exist", projectKey);
+        webhookSupport.checkUserPermissionOn(componentDto);
+        webhookSupport.checkThatProjectBelongsToOrganization(componentDto, organizationDto, "Project '%s' does not belong to organisation '%s'", projectKey, organizationKey);
+        webhookSupport.checkUserPermissionOn(componentDto);
+        return dbClient.webhookDao().selectByProjectUuid(dbSession, componentDto.uuid());
+
+      } else {
+
+        webhookSupport.checkUserPermissionOn(organizationDto);
+        return dbClient.webhookDao().selectByOrganizationUuid(dbSession, organizationDto.getUuid());
+
+      }
+
     }
   }
 
-  private static void writeResponse(Request request, Response response, List<Setting> settings) {
+  private static void writeResponse(Request request, Response response, List<WebhookDto> webhookDtos) {
 
     Builder responseBuilder = newBuilder();
 
-    settings
+    webhookDtos
       .stream()
-      .map(Setting::getPropertySets)
-      .flatMap(Collection::stream)
-      .forEach(map -> responseBuilder.addWebhooksBuilder()
-        .setKey("")
-        .setName(map.get("name"))
-        .setUrl(map.get("url")));
+      .forEach(webhook -> responseBuilder.addWebhooksBuilder()
+        .setKey(webhook.getUuid())
+        .setName(webhook.getName())
+        .setUrl(webhook.getUrl()));
 
     writeProtobuf(responseBuilder.build(), request, response);
+  }
+
+  private OrganizationDto defaultOrganizationDto(DbSession dbSession) {
+    String uuid = defaultOrganizationProvider.get().getUuid();
+    Optional<OrganizationDto> organizationDto = dbClient.organizationDao().selectByUuid(dbSession, uuid);
+    return checkStateWithOptional(organizationDto, "the default organization '%s' was not found", uuid);
   }
 
 }

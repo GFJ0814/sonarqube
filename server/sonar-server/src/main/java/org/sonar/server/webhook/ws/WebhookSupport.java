@@ -21,6 +21,7 @@ package org.sonar.server.webhook.ws;
 
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
+import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.user.UserSession;
 
 import static java.lang.String.format;
@@ -32,7 +33,7 @@ public class WebhookSupport {
 
   private final UserSession userSession;
 
-  public WebhookSupport(UserSession userSession) {
+  WebhookSupport(UserSession userSession) {
     this.userSession = userSession;
   }
 
@@ -51,6 +52,12 @@ public class WebhookSupport {
     String sub = url.substring("http://".length());
     if (sub.contains(":") && !sub.substring(sub.indexOf(':')).contains("@")) {
       throw new IllegalArgumentException(format(message, messageArguments));
+    }
+  }
+
+  void checkThatProjectBelongsToOrganization(ComponentDto componentDto, OrganizationDto organizationDto, String message, Object... messageArguments) {
+    if (!organizationDto.getUuid().equals(componentDto.getOrganizationUuid())) {
+      throw new NotFoundException(format(message, messageArguments));
     }
   }
 
