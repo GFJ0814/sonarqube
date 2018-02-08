@@ -18,17 +18,30 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import ClipboardButton from '../../../components/controls/ClipboardButton';
+import * as classNames from 'classnames';
+import ClipboardButton from '../controls/ClipboardButton';
+import './CodeSnippet.css';
 
 interface Props {
-  snippet: string;
+  className?: string;
+  isOneLine?: boolean;
+  noCopy?: boolean;
+  snippet: string | (string | undefined)[];
 }
 
-export default function BadgeSnippet({ snippet }: Props) {
+// keep this "useless" concatentation for the readability reason
+// eslint-disable-next-line no-useless-concat
+const s = ' \\' + '\n  ';
+
+export default function CodeSnippet({ className, isOneLine, noCopy, snippet }: Props) {
+  const snippetArray = Array.isArray(snippet)
+    ? snippet.filter(line => line !== undefined)
+    : [snippet];
+  const finalSnippet = isOneLine ? snippetArray.join(' ') : snippetArray.join(s);
   return (
-    <div className="badge-snippet">
-      <pre>{snippet}</pre>
-      <ClipboardButton copyValue={snippet} tooltipPlacement="top" />
+    <div className={classNames('code-snippet', { 'code-snippet-oneline': isOneLine }, className)}>
+      <pre>{finalSnippet}</pre>
+      {!noCopy && <ClipboardButton copyValue={finalSnippet} tooltipPlacement="top" />}
     </div>
   );
 }
