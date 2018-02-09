@@ -20,23 +20,35 @@
 
 package org.sonar.server.platform.db.migration.version.v71;
 
+import java.sql.SQLException;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.sonar.db.CoreDbTester;
 
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMigrationCount;
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMinimumMigrationNumber;
+public class DropTableProjectLinksTest {
 
-public class DbVersion71Test {
+  @Rule
+  public final CoreDbTester dbTester = CoreDbTester.createForSchema(DropTableProjectLinksTest.class, "project_links.sql");
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
-  private DbVersion71 underTest = new DbVersion71();
+  private DropTableProjectLinks underTest = new DropTableProjectLinks(dbTester.database());
 
   @Test
-  public void migrationNumber_starts_at_2000() {
-    verifyMinimumMigrationNumber(underTest, 2000);
+  public void creates_table_on_empty_db() throws SQLException {
+    underTest.execute();
+
+    dbTester.assertTableDoesNotExist("project_links");
   }
 
   @Test
-  public void verify_migration_count() {
-    verifyMigrationCount(underTest, 11);
+  public void migration_is_not_reentrant() throws SQLException {
+    underTest.execute();
+
+    expectedException.expect(IllegalStateException.class);
+
+    underTest.execute();
   }
 
 }
