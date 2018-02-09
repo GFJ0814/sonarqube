@@ -40,8 +40,8 @@ import org.sonar.server.ws.WsActionTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.core.util.Uuids.UUID_EXAMPLE_01;
-import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
 import static org.sonar.server.projectlink.ws.ProjectLinksWsParameters.PARAM_ID;
+import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
 
 public class DeleteActionTest {
 
@@ -198,11 +198,11 @@ public class DeleteActionTest {
   }
 
   private void assertLinkIsDeleted(Long id) {
-    assertThat(dbClient.componentLinkDao().selectById(dbSession, id)).isNull();
+    assertThat(dbClient.componentLinkDao().selectByUuid(dbSession, id)).isNull();
   }
 
   private void assertLinkIsNotDeleted(Long id) {
-    assertThat(dbClient.componentLinkDao().selectById(dbSession, id)).isNotNull();
+    assertThat(dbClient.componentLinkDao().selectByUuid(dbSession, id)).isNotNull();
   }
 
   private void logInAsProjectAdministrator(ComponentDto project) {

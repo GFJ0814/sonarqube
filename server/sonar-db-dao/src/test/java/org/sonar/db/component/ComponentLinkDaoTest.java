@@ -23,6 +23,7 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.utils.System2;
+import org.sonar.api.utils.internal.TestSystem2;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
@@ -34,18 +35,42 @@ import static org.sonar.db.component.ComponentLinkDto.TYPE_HOME_PAGE;
 import static org.sonar.db.component.ComponentLinkDto.TYPE_SOURCES;
 import static org.sonar.db.component.ComponentLinkTesting.newComponentLinkDto;
 
-
 public class ComponentLinkDaoTest {
 
+  private final static long NOW = 10_000_000_000L;
+
+  private System2 system2 = new TestSystem2().setNow(NOW);
+
   @Rule
-  public DbTester db = DbTester.create(System2.INSTANCE);
+  public DbTester db = DbTester.create(system2);
   private DbClient dbClient = db.getDbClient();
   private DbSession dbSession = db.getSession();
 
   private ComponentLinkDao underTest = db.getDbClient().componentLinkDao();
 
   @Test
+  public void select_by_uuid() {
+    ComponentLinkDto componentLink = db.componentLinks().insert(c -> c
+      .setUuid("ABCD")
+      .setComponentUuid("BCDE")
+      .setName("Home")
+      .setType("home")
+      .setHref("http://www.struts.org"));
+
+    ComponentLinkDto reloaded = underTest.selectByUuid(dbSession, componentLink.getUuid());
+
+    assertThat(reloaded.getUuid()).isEqualTo("ABCD");
+    assertThat(reloaded.getComponentUuid()).isEqualTo("BCDE");
+    assertThat(reloaded.getType()).isEqualTo("homepage");
+    assertThat(reloaded.getName()).isEqualTo("Home");
+    assertThat(reloaded.getHref()).isEqualTo("http://www.struts.org");
+    assertThat(reloaded.getCreatedAt()).isEqualTo(NOW);
+    assertThat(reloaded.getUpdatedAt()).isEqualTo(NOW);
+  }
+
+  @Test
   public void select_by_component_uuid() {
+    ComponentLinkDto componentLink1 = db.componentLinks().insert();
     db.prepareDbUnit(getClass(), "shared.xml");
 
     List<ComponentLinkDto> links = underTest.selectByComponentUuid(db.getSession(), "ABCD");
@@ -85,15 +110,6 @@ public class ComponentLinkDaoTest {
   }
 
   @Test
-  public void select_by_id() {
-    ComponentLinkDto link = underTest.insert(dbSession, newComponentLinkDto());
-    db.commit();
-
-    ComponentLinkDto candidate = underTest.selectById(dbSession, link.getId());
-    assertThat(candidate.getId()).isNotNull();
-  }
-
-  @Test
   public void insert() {
     db.prepareDbUnit(getClass(), "empty.xml");
 
@@ -101,8 +117,7 @@ public class ComponentLinkDaoTest {
       .setComponentUuid("ABCD")
       .setType("homepage")
       .setName("Home")
-      .setHref("http://www.sonarqube.org")
-      );
+      .setHref("http://www.sonarqube.org"));
     db.getSession().commit();
 
     db.assertDbUnit(getClass(), "insert-result.xml", new String[] {"id"}, "project_links");
@@ -117,8 +132,7 @@ public class ComponentLinkDaoTest {
       .setComponentUuid("ABCD")
       .setType("homepage")
       .setName("Home")
-      .setHref("http://www.sonarqube.org")
-      );
+      .setHref("http://www.sonarqube.org"));
     db.getSession().commit();
 
     db.assertDbUnit(getClass(), "update-result.xml", "project_links");

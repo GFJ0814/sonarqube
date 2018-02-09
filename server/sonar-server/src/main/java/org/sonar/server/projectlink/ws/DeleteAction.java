@@ -67,7 +67,7 @@ public class DeleteAction implements ProjectLinksWsAction {
   private void doHandle(String idParam) {
     try (DbSession dbSession = dbClient.openSession(false)) {
       long id = Long.parseLong(idParam);
-      ComponentLinkDto link = dbClient.componentLinkDao().selectById(dbSession, id);
+      ComponentLinkDto link = dbClient.componentLinkDao().selectByUuid(dbSession, id);
 
       link = WsUtils.checkFound(link, "Link with id '%s' not found", id);
       checkProjectAdminPermission(link);

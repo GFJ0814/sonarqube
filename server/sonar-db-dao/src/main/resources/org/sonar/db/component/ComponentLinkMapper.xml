@@ -4,10 +4,13 @@
 
   <sql id="componentLinkColumns">
     p.id,
+    p.uuid,
     p.component_uuid as "componentUuid",
     p.link_type as "type",
     p.name as name,
-    p.href as href
+    p.href as href,
+    p.created_at as "createdAt",
+    p.updated_at as "updatedAt"
   </sql>
 
   <select id="selectByComponentUuid" parameterType="String" resultType="ComponentLink">
@@ -30,22 +33,32 @@
     order by p.id
   </select>
 
-  <select id="selectById" parameterType="long" resultType="ComponentLink">
+  <select id="selectByUuid" parameterType="long" resultType="ComponentLink">
     SELECT
     <include refid="componentLinkColumns"/>
     FROM project_links p
-    where p.id=#{id,jdbcType=BIGINT}
+    where p.uuid=#{uuid,jdbcType=VARCHAR}
   </select>
 
-  <insert id="insert" parameterType="ComponentLink" keyColumn="id" useGeneratedKeys="true" keyProperty="id">
-    INSERT INTO project_links (component_uuid, link_type, name, href)
-    VALUES (#{componentUuid,jdbcType=VARCHAR}, #{type,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR},
-    #{href,jdbcType=VARCHAR})
+  <insert id="insert" parameterType="ComponentLink" useGeneratedKeys="false">
+    INSERT INTO project_links (uuid, component_uuid, link_type, name, href, created_at, updated_at)
+    VALUES (
+       #{uuid,jdbcType=VARCHAR},
+       #{componentUuid,jdbcType=VARCHAR},
+       #{type,jdbcType=VARCHAR},
+       #{name,jdbcType=VARCHAR},
+       #{href,jdbcType=VARCHAR},
+       #{createdAt,jdbcType=BIGINT},6
+       #{updatedAt,jdbcType=BIGINT})
   </insert>
 
   <insert id="update" parameterType="ComponentLink" useGeneratedKeys="false">
-    UPDATE project_links SET component_uuid=#{componentUuid,jdbcType=VARCHAR}, link_type=#{type,jdbcType=VARCHAR},
-    name=#{name,jdbcType=VARCHAR}, href=#{href,jdbcType=VARCHAR}
+    UPDATE project_links SET
+       component_uuid=#{componentUuid,jdbcType=VARCHAR},
+       link_type=#{type,jdbcType=VARCHAR},
+       name=#{name,jdbcType=VARCHAR},
+       href=#{href,jdbcType=VARCHAR},
+       updated_at=#{updatedAt,jdbcType=VARCHAR}
     WHERE id=#{id,jdbcType=BIGINT}
   </insert>
 

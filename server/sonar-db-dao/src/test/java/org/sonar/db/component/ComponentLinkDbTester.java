@@ -19,22 +19,30 @@
  */
 package org.sonar.db.component;
 
-import org.sonar.core.util.Uuids;
+import java.util.Arrays;
+import java.util.function.Consumer;
+import org.sonar.db.DbClient;
+import org.sonar.db.DbSession;
+import org.sonar.db.DbTester;
 
-import static org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
-import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
+public class ComponentLinkDbTester {
+  private final DbTester db;
+  private final DbClient dbClient;
+  private final DbSession dbSession;
 
-public class ComponentLinkTesting {
-
-  public static ComponentLinkDto newComponentLinkDto() {
-    return new ComponentLinkDto()
-      .setUuid(Uuids.createFast())
-      .setComponentUuid(Uuids.createFast())
-      .setHref(randomAlphanumeric(128))
-      .setName(randomAlphabetic(128))
-      .setType(ComponentLinkDto.TYPE_SOURCES)
-      .setCreatedAt(System.currentTimeMillis())
-      .setUpdatedAt(System.currentTimeMillis());
+  public ComponentLinkDbTester(DbTester db) {
+    this.db = db;
+    this.dbClient = db.getDbClient();
+    this.dbSession = db.getSession();
   }
 
+  @SafeVarargs
+  public final ComponentLinkDto insert(Consumer<ComponentLinkDto>... dtoPopulators) {
+    ComponentLinkDto componentLink = ComponentLinkTesting.newComponentLinkDto();
+    Arrays.stream(dtoPopulators)
+      .forEach(dtoPopulator -> dtoPopulator.accept(componentLink));
+    dbClient.componentLinkDao().insert(dbSession, componentLink);
+    db.commit();
+    return componentLink;
+  }
 }

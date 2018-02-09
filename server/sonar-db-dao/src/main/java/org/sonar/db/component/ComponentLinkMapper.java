@@ -28,7 +28,7 @@ public interface ComponentLinkMapper {
 
   List<ComponentLinkDto> selectByComponentUuids(@Param("componentUuids") List<String> componentUuids);
 
-  ComponentLinkDto selectById(@Param("id") long id);
+  ComponentLinkDto selectByUuid(@Param("uuid") String uuid);
 
   void insert(ComponentLinkDto dto);
 

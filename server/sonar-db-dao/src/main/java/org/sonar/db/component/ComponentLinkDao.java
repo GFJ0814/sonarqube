@@ -21,12 +21,19 @@ package org.sonar.db.component;
 
 import java.util.List;
 import javax.annotation.CheckForNull;
+import org.sonar.api.utils.System2;
 import org.sonar.db.Dao;
 import org.sonar.db.DbSession;
 
 import static java.util.Collections.emptyList;
 
 public class ComponentLinkDao implements Dao {
+
+  private final System2 system2;
+
+  public ComponentLinkDao(System2 system2) {
+    this.system2 = system2;
+  }
 
   public List<ComponentLinkDto> selectByComponentUuid(DbSession session, String componentUuid) {
     return session.getMapper(ComponentLinkMapper.class).selectByComponentUuid(componentUuid);
@@ -37,12 +44,13 @@ public class ComponentLinkDao implements Dao {
   }
 
   @CheckForNull
-  public ComponentLinkDto selectById(DbSession session, long id) {
-    return session.getMapper(ComponentLinkMapper.class).selectById(id);
+  public ComponentLinkDto selectByUuid(DbSession session, String uuid) {
+    return session.getMapper(ComponentLinkMapper.class).selectByUuid(uuid);
   }
 
   public ComponentLinkDto insert(DbSession session, ComponentLinkDto dto) {
-    session.getMapper(ComponentLinkMapper.class).insert(dto);
+    long now = system2.now();
+    session.getMapper(ComponentLinkMapper.class).insert(dto.setCreatedAt(now).setUpdatedAt(now));
     return dto;
   }
 

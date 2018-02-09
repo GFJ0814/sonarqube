@@ -48,12 +48,12 @@ import org.sonarqube.ws.ProjectLinks;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.core.util.Uuids.UUID_EXAMPLE_01;
-import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
-import static org.sonar.test.JsonAssert.assertJson;
 import static org.sonar.server.projectlink.ws.ProjectLinksWsParameters.PARAM_NAME;
 import static org.sonar.server.projectlink.ws.ProjectLinksWsParameters.PARAM_PROJECT_ID;
 import static org.sonar.server.projectlink.ws.ProjectLinksWsParameters.PARAM_PROJECT_KEY;
 import static org.sonar.server.projectlink.ws.ProjectLinksWsParameters.PARAM_URL;
+import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
+import static org.sonar.test.JsonAssert.assertJson;
 
 public class CreateActionTest {
 
@@ -299,7 +299,7 @@ public class CreateActionTest {
 
     long newId = Long.valueOf(response.getLink().getId());
 
-    ComponentLinkDto link = dbClient.componentLinkDao().selectById(dbSession, newId);
+    ComponentLinkDto link = dbClient.componentLinkDao().selectByUuid(dbSession, newId);
     assertThat(link.getName()).isEqualTo(name);
     assertThat(link.getHref()).isEqualTo(url);
     assertThat(link.getType()).isEqualTo(type);

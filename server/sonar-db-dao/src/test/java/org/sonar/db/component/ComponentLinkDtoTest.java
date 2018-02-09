@@ -28,17 +28,21 @@ public class ComponentLinkDtoTest {
   @Test
   public void test_getters_and_setters() {
     ComponentLinkDto dto = new ComponentLinkDto()
-      .setId(1L)
-      .setComponentUuid("ABCD")
+      .setUuid("ABCD")
+      .setComponentUuid("EFGH")
       .setType("homepage")
       .setName("Home")
-      .setHref("http://www.sonarqube.org");
+      .setHref("http://www.sonarqube.org")
+      .setCreatedAt(1_000_000_000L)
+      .setUpdatedAt(5_000_000_000L);
 
-    assertThat(dto.getId()).isEqualTo(1L);
-    assertThat(dto.getComponentUuid()).isEqualTo("ABCD");
+    assertThat(dto.getUuid()).isEqualTo("ABCD");
+    assertThat(dto.getComponentUuid()).isEqualTo("EFGH");
     assertThat(dto.getType()).isEqualTo("homepage");
     assertThat(dto.getName()).isEqualTo("Home");
     assertThat(dto.getHref()).isEqualTo("http://www.sonarqube.org");
+    assertThat(dto.getCreatedAt()).isEqualTo(1_000_000_000L);
+    assertThat(dto.getUpdatedAt()).isEqualTo(5_000_000_000L);
   }
 
   @Test
